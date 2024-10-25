@@ -7,17 +7,18 @@ from django.utils.timezone import now
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
-    full_name=models.CharField(max_length=300,default='')
-    bio=models.TextField(default='')
-    location=models.CharField(max_length=150,default='')
-    profile_picture=models.ImageField(upload_to='profile_picture/')
+    full_name = models.CharField(max_length=300,default='')
+    bio = models.TextField(default='')
+    location = models.CharField(max_length=150,default='')
+    # profile_picture = models.ImageField(upload_to='profile_picture/')
     
     def __str__(self):
         return self.user.username
     
     
 class Event(models.Model):
-    title=models.CharField(max_length=200,default='',primary_key=True)
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=200,default='')
     description = models.TextField(default='')
     organizer = models.CharField(max_length=500,default='')
     location = models.CharField(max_length=150,default='')

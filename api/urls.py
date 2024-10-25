@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.urls import path,include
 from MainApp import views
-from MainApp.views import UserViewSet,ProfileAPI
+from MainApp.views import UserViewSet,ProfileAPI,EventAPI,RSVPAPI,ReviewAPI
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -25,5 +25,10 @@ urlpatterns = router.urls
 
 urlpatterns = [
     path('',include(router.urls)),
-    path('userprofile/',ProfileAPI.as_view()) 
+    path('userprofile/',ProfileAPI.as_view()), 
+    path('events/',EventAPI.as_view()),
+    path('events/<int:slug>/',EventAPI.as_view()),
+    path('events/<int:id>/rsvp/',RSVPAPI.as_view()),
+    path('events/<int:eid>/rsvp/<int:uid>/',RSVPAPI.as_view()),
+    path('events/<int:id>/review/',ReviewAPI.as_view()),
 ]
