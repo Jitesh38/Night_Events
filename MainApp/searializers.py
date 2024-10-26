@@ -1,12 +1,6 @@
-import base64
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile,Event,RSVP,Review
-from django.core.files.base import ContentFile
-
-
-
-# From  gist.github.com/yprez/7704036
 
 class UserSerilizer(serializers.ModelSerializer):
     class Meta:
@@ -36,8 +30,6 @@ class UserprofileSerializer(serializers.Serializer):
         username =  validated_data['user']
         print(username)
         user = User.objects.get(username = username)
-        # if UserProfile.objects.get(user=user) > 0:
-        #     raise serializers.ValidationError('User already exist! Try to use PUT/PATCH request')
         userprofile = UserProfile(
             user = user,
             full_name = validated_data['full_name'],
@@ -57,12 +49,18 @@ class RSVPSerializer(serializers.ModelSerializer):
     class Meta:
         model = RSVP
         fields = '__all__'
-        # depth = 1
+
                 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
+        
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    
+
         
     
     

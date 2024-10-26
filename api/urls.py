@@ -16,19 +16,26 @@ Including another URLconf
 """
 from django.urls import path,include
 from MainApp import views
-from MainApp.views import UserViewSet,ProfileAPI,EventAPI,RSVPAPI,ReviewAPI
+from MainApp.views import UserViewSet,ProfileAPI,EventAPI,RSVPAPI,ReviewAPI,rsvp_apiview,LoginAPI
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'user', UserViewSet, basename='user')
 urlpatterns = router.urls
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
     path('',include(router.urls)),
+    path('login/',LoginAPI.as_view()),
     path('userprofile/',ProfileAPI.as_view()), 
     path('events/',EventAPI.as_view()),
     path('events/<int:slug>/',EventAPI.as_view()),
     path('events/<int:id>/rsvp/',RSVPAPI.as_view()),
-    path('events/<int:eid>/rsvp/<int:uid>/',RSVPAPI.as_view()),
+    path('events/<int:eid>/rsvp/<int:uid>/',rsvp_apiview),
     path('events/<int:id>/review/',ReviewAPI.as_view()),
+     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

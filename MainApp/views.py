@@ -1,15 +1,17 @@
-from django.shortcuts import render,redirect,HttpResponse
-from .searializers import UserSerilizer,UserprofileSerializer,EventSerializer,RSVPSerializer,ReviewSerializer
+from django.shortcuts import render
+from .searializers import *
 from rest_framework import viewsets
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import UserProfile,Event,RSVP,Review
+from .models import *
 from rest_framework import status
-from rest_framework.parsers import JSONParser, MultiPartParser
 from django.core.paginator import Paginator
-
-
+from rest_framework.decorators import api_view
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 def home(request):
@@ -17,11 +19,13 @@ def home(request):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerilizer
-    queryset = User.objects.all()
-    
+    queryset = User.objects.all()    
     
     
 class ProfileAPI(APIView):    
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self,request):
         data = UserProfile.objects.all()
         serilizer = UserprofileSerializer(data,many = True)  
@@ -36,21 +40,24 @@ class ProfileAPI(APIView):
         return Response({"Status" : "False" , "error" : serializer.errors},status.HTTP_400_BAD_REQUEST)
     
 
-class EventAPI(APIView):    
+class EventAPI(APIView):   
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated] 
     
     def get(self,request,slug=0):
         if slug == 0:
             data = Event.objects.all()
+            # Pagination
             page = request.GET.get('page' , 1)
-            page_size = 2
+            page_size = 3
             paginator = Paginator(data,page_size)
             print(paginator.page(page))
             serializer = EventSerializer(paginator.page(page) , many = True)
-            return Response(serializer.data)
+            return Response(serializer.data,status.HTTP_200_OK)
         else:
             data = Event.objects.get(id = slug)
             serializer = EventSerializer(data)
-            return Response(serializer.data)
+            return Response(serializer.data,status.HTTP_200_OK)
         
     def post(self,request):
         data = request.data
@@ -75,14 +82,14 @@ class EventAPI(APIView):
     
 
 class RSVPAPI(APIView):
-    
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated] 
+        
     def get(self,request,id):
         event = Event.objects.get(id = id)
         data = RSVP.objects.filter(event = event)
         serializer = RSVPSerializer(data,many = True)
-        return Response(serializer.data)
-
-    
+        return Response(serializer.data,status.HTTP_200_OK)    
     
     def post(self,request,id):
         event = Event.objects.get(id = id)
@@ -91,20 +98,33 @@ class RSVPAPI(APIView):
             rsvp = RSVP(event = event,user=request.user,status = request.data['status'])
             rsvp.save()
             return Response({"Status" : "True" , "message" : "RSVP added Successfully"},status.HTTP_201_CREATED)
-        return Response({"status":"False"})
+        return Response({"status":"False","error":serializer.errors},status.HTTP_400_BAD_REQUEST)
 
-    def put(self,request,eid,uid):
+    
+@api_view(['GET','PUT'])
+
+def rsvp_apiview(request,eid,uid):
+        
+    if request.method == 'PUT':
         event = Event.objects.get(id = eid)
         user = User.objects.get(id = uid)
-        rsvp = RSVP.objects.filter(event = event,user = user)        
-        serializer = RSVP(rsvp,data = request.data , partial = True) 
+        rsvp = RSVP.objects.get(event = event,user = user)        
+        serializer = RSVPSerializer(rsvp,data = request.data,partial = True) 
         if serializer.is_valid():
             serializer.save()
-            return Response({"Status" : "True" , "message" : "Event updated Successfully"},status.HTTP_201_CREATED)
-        return Response({"Status" : "False" , "error" : serializer.errors},status.HTTP_400_BAD_REQUEST)
-    
+            return Response(serializer.data,status.HTTP_200_OK)         
+        return Response(serializer.errors,status.HTTP_400_BAD_REQUEST)    
+    else :
+        event = Event.objects.get(id = eid)
+        user = User.objects.get(id = uid)
+        rsvp = RSVP.objects.get(event = event,user = user)        
+        serializer = RSVPSerializer(rsvp)
+        return Response(serializer.data,status.HTTP_201_CREATED)      
+        
 
 class ReviewAPI(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get(self,request,id):
         event = Event.objects.get(id = id)
@@ -119,5 +139,28 @@ class ReviewAPI(APIView):
             review = Review(event = event,user=request.user,rating = request.data['rating'],comment = request.data['comment'])
             review.save()
             return Response({"Status" : "True" , "message" : "RSVP added Successfully"},status.HTTP_201_CREATED)
-        return Response({"status":"False"})       
+        return Response({"status":"False"})      
+    
+    
+class LoginAPI(APIView):
+        
+    def post(self,request):
+        data = request.data
+        serializer = LoginSerializer(data = data)
+        if serializer.is_valid():
+            username = serializer.data['username']
+            password = serializer.data['password']
+            user = authenticate(username = username,password = password)
+            
+            if user is None:
+                pass
+            else:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                })
+                
+            
+            
         
